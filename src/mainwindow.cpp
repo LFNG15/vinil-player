@@ -3,6 +3,9 @@
 #include <QHBoxLayout>
 #include <QFrame>
 #include <QScrollArea>
+#include <QDialog>
+#include <QGridLayout>
+#include <QSettings>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -208,17 +211,37 @@ void MainWindow::buildSidebar(QWidget *sidebar) {
     scrollArea->setWidget(m_sidebarFoldersContainer);
     layout->addWidget(scrollArea, 1);
 
-    // Track count footer
+    // Footer
     auto *footerSep = new QFrame();
     footerSep->setFrameShape(QFrame::HLine);
     footerSep->setStyleSheet(QString("color: %1;").arg(Theme::border().name()));
     footerSep->setFixedHeight(1);
     layout->addWidget(footerSep);
 
+    auto *footerWidget = new QWidget();
+    footerWidget->setStyleSheet("background: transparent;");
+    auto *footerLayout = new QHBoxLayout(footerWidget);
+    footerLayout->setContentsMargins(20, 8, 12, 12);
+    footerLayout->setSpacing(4);
+
     m_trackCountLabel = new QLabel("0 faixas na biblioteca");
     m_trackCountLabel->setFont(Theme::bodyFont(10));
-    m_trackCountLabel->setStyleSheet(QString("color: %1; background: transparent; padding: 12px 20px;").arg(Theme::textMuted().name()));
-    layout->addWidget(m_trackCountLabel);
+    m_trackCountLabel->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::textMuted().name()));
+    footerLayout->addWidget(m_trackCountLabel, 1);
+
+    auto *themeBtn = new QPushButton("\uE790");
+    themeBtn->setFixedSize(28, 28);
+    themeBtn->setCursor(Qt::PointingHandCursor);
+    themeBtn->setFont(Theme::iconFont(12));
+    themeBtn->setToolTip("Escolher tema");
+    themeBtn->setStyleSheet(QString(
+        "QPushButton { background: transparent; color: %1; border: none; border-radius: 6px; }"
+        "QPushButton:hover { background: rgba(255,255,255,0.08); color: %2; }"
+    ).arg(Theme::textMuted().name(), Theme::accent().name()));
+    connect(themeBtn, &QPushButton::clicked, this, &MainWindow::showThemePicker);
+    footerLayout->addWidget(themeBtn);
+
+    layout->addWidget(footerWidget);
 }
 
 void MainWindow::refreshSidebarFolders() {
@@ -328,4 +351,72 @@ void MainWindow::refreshCurrentPage() {
 void MainWindow::onTrackPlay(const Track &track) {
     m_playerBar->playTrack(track);
     refreshCurrentPage();
+}
+
+void MainWindow::showThemePicker() {
+    auto *dlg = new QDialog(this);
+    dlg->setWindowTitle("Escolher Tema");
+    dlg->setFixedSize(356, 290);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->setStyleSheet(QString(
+        "QDialog { background: %1; }"
+        "QLabel  { background: transparent; color: %2; }"
+    ).arg(Theme::surface().name(), Theme::text().name()));
+
+    auto *layout = new QVBoxLayout(dlg);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(12);
+
+    auto *title = new QLabel("Paleta de Cores");
+    title->setFont(Theme::titleFont(14));
+    layout->addWidget(title);
+
+    auto *grid = new QGridLayout();
+    grid->setSpacing(8);
+
+    const auto themes   = Theme::allThemes();
+    const QString curId = Theme::activeTheme().id;
+
+    for (int i = 0; i < themes.size(); ++i) {
+        const auto &t = themes[i];
+
+        auto *btn = new QPushButton();
+        btn->setFixedSize(152, 72);
+        btn->setCursor(Qt::PointingHandCursor);
+
+        bool active = (t.id == curId);
+        btn->setStyleSheet(QString(
+            "QPushButton {"
+            "  background: qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "    stop:0 %1, stop:1 %2);"
+            "  border: 2px solid %3;"
+            "  border-radius: 10px;"
+            "}"
+            "QPushButton:hover { border: 2px solid %4; }"
+        ).arg(t.bg.name(), t.accent.name(),
+              active ? t.accent.name() : t.border.name(),
+              t.accent.name()));
+
+        auto *btnLayout = new QVBoxLayout(btn);
+        btnLayout->setAlignment(Qt::AlignCenter);
+        btnLayout->setContentsMargins(0, 0, 0, 0);
+
+        auto *nameLabel = new QLabel(t.name);
+        nameLabel->setFont(Theme::bodyFont(10));
+        nameLabel->setStyleSheet(QString("color: %1; background: transparent;").arg(t.text.name()));
+        nameLabel->setAlignment(Qt::AlignCenter);
+        btnLayout->addWidget(nameLabel);
+
+        connect(btn, &QPushButton::clicked, dlg, [this, t, dlg]() {
+            QSettings s;
+            s.setValue("theme", t.id);
+            dlg->accept();
+            emit themeChangeRequested();
+        });
+
+        grid->addWidget(btn, i / 2, i % 2);
+    }
+
+    layout->addLayout(grid);
+    dlg->exec();
 }

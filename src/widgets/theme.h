@@ -5,23 +5,88 @@
 #include <QColor>
 #include <QFont>
 #include <QRandomGenerator>
-#include <QStringList>
+#include <QList>
 
 namespace Theme {
 
-// ─── Colors ── warm vinyl / analog aesthetic ─────────────────────
-inline QColor bg()          { return QColor("#1a1712"); }
-inline QColor surface()     { return QColor("#221f19"); }
-inline QColor card()        { return QColor("#2a2620"); }
-inline QColor cardHover()   { return QColor("#342f28"); }
-inline QColor accent()      { return QColor("#e8a44a"); }
-inline QColor accentDim()   { return QColor("#c4883a"); }
-inline QColor text()        { return QColor("#f0ece4"); }
-inline QColor textSoft()    { return QColor("#b8b0a2"); }
-inline QColor textMuted()   { return QColor("#7a7266"); }
-inline QColor border()      { return QColor("#3a352d"); }
-inline QColor danger()      { return QColor("#d45d5d"); }
-inline QColor vinylBlack()  { return QColor("#111111"); }
+struct ThemeData {
+    QString id;
+    QString name;
+    QColor bg, surface, card, cardHover;
+    QColor accent, accentDim;
+    QColor text, textSoft, textMuted, border, danger, vinylBlack;
+};
+
+inline ThemeData warmTheme() {
+    return { "warm", "Vinil Quente",
+        {"#1a1712"}, {"#221f19"}, {"#2a2620"}, {"#342f28"},
+        {"#e8a44a"}, {"#c4883a"},
+        {"#f0ece4"}, {"#b8b0a2"}, {"#7a7266"}, {"#3a352d"},
+        {"#d45d5d"}, {"#111111"} };
+}
+
+inline ThemeData oceanTheme() {
+    return { "ocean", "Oceano",
+        {"#0d1520"}, {"#111c2d"}, {"#162338"}, {"#1d2e47"},
+        {"#4aa8e8"}, {"#3a8ec4"},
+        {"#e4f0f8"}, {"#a0c0d8"}, {"#5a7a90"}, {"#1e3048"},
+        {"#e85d5d"}, {"#080d14"} };
+}
+
+inline ThemeData forestTheme() {
+    return { "forest", "Floresta",
+        {"#121a12"}, {"#182018"}, {"#1f281f"}, {"#283328"},
+        {"#6bcf7f"}, {"#52b066"},
+        {"#e8f0e8"}, {"#a8c0a8"}, {"#6a8a6a"}, {"#2a3a2a"},
+        {"#d45d5d"}, {"#080f08"} };
+}
+
+inline ThemeData purpleTheme() {
+    return { "purple", "Roxo Noturno",
+        {"#15101a"}, {"#1d1525"}, {"#261c30"}, {"#30233c"},
+        {"#c084fc"}, {"#a066d8"},
+        {"#f0e8f8"}, {"#c0a8d8"}, {"#7a6090"}, {"#352545"},
+        {"#f05d7a"}, {"#0d0810"} };
+}
+
+inline ThemeData grayTheme() {
+    return { "gray", "Cinza Moderno",
+        {"#141414"}, {"#1c1c1c"}, {"#242424"}, {"#2e2e2e"},
+        {"#e0e0e0"}, {"#bdbdbd"},
+        {"#f5f5f5"}, {"#bdbdbd"}, {"#757575"}, {"#333333"},
+        {"#ef5350"}, {"#0a0a0a"} };
+}
+
+inline ThemeData& activeTheme() {
+    static ThemeData t = warmTheme();
+    return t;
+}
+
+inline void setActiveTheme(const ThemeData &t) { activeTheme() = t; }
+
+inline QList<ThemeData> allThemes() {
+    return { warmTheme(), oceanTheme(), forestTheme(), purpleTheme(), grayTheme() };
+}
+
+inline ThemeData themeById(const QString &id) {
+    for (const auto &t : allThemes())
+        if (t.id == id) return t;
+    return warmTheme();
+}
+
+// ─── Colors ── delegates to active theme ─────────────────────
+inline QColor bg()          { return activeTheme().bg; }
+inline QColor surface()     { return activeTheme().surface; }
+inline QColor card()        { return activeTheme().card; }
+inline QColor cardHover()   { return activeTheme().cardHover; }
+inline QColor accent()      { return activeTheme().accent; }
+inline QColor accentDim()   { return activeTheme().accentDim; }
+inline QColor text()        { return activeTheme().text; }
+inline QColor textSoft()    { return activeTheme().textSoft; }
+inline QColor textMuted()   { return activeTheme().textMuted; }
+inline QColor border()      { return activeTheme().border; }
+inline QColor danger()      { return activeTheme().danger; }
+inline QColor vinylBlack()  { return activeTheme().vinylBlack; }
 
 // ─── Gradients (as pairs of colors for covers) ──────────────────
 struct GradientPair {
@@ -73,10 +138,11 @@ inline QFont iconFont(int size = 14) {
 
 // ─── Global stylesheet ──────────────────────────────────────────
 inline QString globalStyleSheet() {
-    return R"(
+    const auto &t = activeTheme();
+    return QString(R"(
         QWidget {
-            background-color: #1a1712;
-            color: #f0ece4;
+            background-color: %1;
+            color: %2;
             font-family: "Segoe UI", "Noto Sans", sans-serif;
         }
         QScrollBar:vertical {
@@ -85,12 +151,12 @@ inline QString globalStyleSheet() {
             margin: 0;
         }
         QScrollBar::handle:vertical {
-            background: #3a352d;
+            background: %3;
             border-radius: 4px;
             min-height: 30px;
         }
         QScrollBar::handle:vertical:hover {
-            background: #7a7266;
+            background: %4;
         }
         QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
             height: 0;
@@ -102,13 +168,14 @@ inline QString globalStyleSheet() {
             height: 0px;
         }
         QToolTip {
-            background-color: #2a2620;
-            color: #f0ece4;
-            border: 1px solid #3a352d;
+            background-color: %5;
+            color: %2;
+            border: 1px solid %3;
             padding: 4px 8px;
             border-radius: 4px;
         }
-    )";
+    )").arg(t.bg.name(), t.text.name(), t.border.name(),
+            t.textMuted.name(), t.card.name());
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────

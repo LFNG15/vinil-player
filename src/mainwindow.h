@@ -19,10 +19,14 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
+signals:
+    void themeChangeRequested();
+
 private slots:
     void navigateTo(const QString &page, const QString &data = "");
     void refreshCurrentPage();
     void onTrackPlay(const Track &track);
+    void showThemePicker();
 
 private:
     void buildSidebar(QWidget *sidebar);

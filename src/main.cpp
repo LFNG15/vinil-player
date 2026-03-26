@@ -1,21 +1,34 @@
 #include <QApplication>
+#include <QSettings>
 #include "mainwindow.h"
 #include "theme.h"
 
+static const int RESTART_CODE = 1000;
+
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
-    app.setApplicationName("Vinil Player");
-    app.setOrganizationName("VinilPlayer");
+    int exitCode;
+    do {
+        QApplication app(argc, argv);
+        app.setApplicationName("Vinil Player");
+        app.setOrganizationName("VinilPlayer");
 
-    app.setStyleSheet(Theme::globalStyleSheet());
+        QSettings settings;
+        Theme::setActiveTheme(Theme::themeById(settings.value("theme", "warm").toString()));
 
-    QFont defaultFont("Segoe UI", 12);
-    defaultFont.setWeight(QFont::Medium);
-    app.setFont(defaultFont);
+        app.setStyleSheet(Theme::globalStyleSheet());
 
-    MainWindow window;
-    window.show();
+        QFont defaultFont("Segoe UI", 12);
+        defaultFont.setWeight(QFont::Medium);
+        app.setFont(defaultFont);
 
-    return app.exec();
+        MainWindow window;
+        QObject::connect(&window, &MainWindow::themeChangeRequested,
+                         []() { qApp->exit(RESTART_CODE); });
+        window.show();
+
+        exitCode = app.exec();
+    } while (exitCode == RESTART_CODE);
+
+    return exitCode;
 }

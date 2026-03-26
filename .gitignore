@@ -1,1 +1,34 @@
+# Claude Code
 /.claude
+
+# Build output
+build/
+debug/
+release/
+Makefile
+Makefile.Debug
+Makefile.Release
+*.o
+*.obj
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# qmake generated
+.qmake.stash
+*.user.stash
+
+# Qt Creator (configuracoes especificas da sua maquina)
+.qtcreator/
+*.pro.user
+*.pro.user.*
+
+# Clangd cache
+.qtc_clangd/
+.cache/
+
+# VS Code (manter para compartilhar configuracoes de build)
+# .vscode/

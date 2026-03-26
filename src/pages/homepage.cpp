@@ -28,7 +28,7 @@ HomePage::HomePage(TrackModel *model, QWidget *parent)
     outerLayout->addWidget(m_scroll);
 }
 
-void HomePage::refresh(const QString &currentTrackId, bool isPlaying) {
+void HomePage::refresh(int currentTrackId, bool isPlaying) {
     // Clear existing
     QLayoutItem *item;
     while ((item = m_contentLayout->takeAt(0)) != nullptr) {
@@ -150,7 +150,7 @@ void HomePage::refresh(const QString &currentTrackId, bool isPlaying) {
     m_contentLayout->addStretch();
 }
 
-QWidget *HomePage::createTrackRow(const Track &track, int index, const QString &currentId, bool isPlaying) {
+QWidget *HomePage::createTrackRow(const Track &track, int index, int currentId, bool isPlaying) {
     bool active = (track.id == currentId);
     auto *row = new QWidget();
     row->setFixedHeight(52);
@@ -214,7 +214,7 @@ QWidget *HomePage::createTrackRow(const Track &track, int index, const QString &
         "QPushButton { background: transparent; color: %1; border: none; font-size: 14px; font-family: \"Segoe MDL2 Assets\"; }"
         "QPushButton:hover { color: %2; }"
     ).arg(track.liked ? Theme::accent().name() : Theme::textMuted().name(), Theme::accent().name()));
-    QString likeId = track.id;
+    int likeId = track.id;
     connect(likeBtn, &QPushButton::clicked, [this, likeId]() { emit likeToggled(likeId); });
     layout->addWidget(likeBtn);
 

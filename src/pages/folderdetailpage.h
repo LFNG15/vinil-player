@@ -10,12 +10,12 @@ class FolderDetailPage : public QWidget {
 public:
     explicit FolderDetailPage(TrackModel *model, QWidget *parent = nullptr);
     void setFolder(const QString &folderName);
-    void refresh(const QString &currentTrackId, bool isPlaying);
+    void refresh(int currentTrackId, bool isPlaying);
 
 signals:
     void playRequested(const Track &track);
-    void likeToggled(const QString &id);
-    void deleteRequested(const QString &id);
+    void likeToggled(int id);
+    void deleteRequested(int id);
     void navigateBack();
 
 private:

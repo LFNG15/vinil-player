@@ -66,7 +66,7 @@ MainWindow::MainWindow(QWidget *parent)
     // ── Connections ─────────────────────────────────────────
     // Home page
     connect(m_homePage, &HomePage::playRequested, this, &MainWindow::onTrackPlay);
-    connect(m_homePage, &HomePage::likeToggled, this, [this](const QString &id) {
+    connect(m_homePage, &HomePage::likeToggled, this, [this](int id) {
         m_model->toggleLike(id);
         refreshCurrentPage();
     });
@@ -86,11 +86,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Folder detail
     connect(m_folderDetailPage, &FolderDetailPage::playRequested, this, &MainWindow::onTrackPlay);
-    connect(m_folderDetailPage, &FolderDetailPage::likeToggled, this, [this](const QString &id) {
+    connect(m_folderDetailPage, &FolderDetailPage::likeToggled, this, [this](int id) {
         m_model->toggleLike(id);
         refreshCurrentPage();
     });
-    connect(m_folderDetailPage, &FolderDetailPage::deleteRequested, this, [this](const QString &id) {
+    connect(m_folderDetailPage, &FolderDetailPage::deleteRequested, this, [this](int id) {
         m_model->removeTrack(id);
         refreshCurrentPage();
         refreshSidebarFolders();
@@ -99,14 +99,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Liked page
     connect(m_likedPage, &LikedPage::playRequested, this, &MainWindow::onTrackPlay);
-    connect(m_likedPage, &LikedPage::likeToggled, this, [this](const QString &id) {
+    connect(m_likedPage, &LikedPage::likeToggled, this, [this](int id) {
         m_model->toggleLike(id);
         refreshCurrentPage();
     });
     connect(m_likedPage, &LikedPage::navigateBack, this, [this]() { navigateTo("home"); });
 
     // Player bar
-    connect(m_playerBar, &PlayerBar::trackChanged, this, [this](const QString &) {
+    connect(m_playerBar, &PlayerBar::trackChanged, this, [this](int) {
         refreshCurrentPage();
     });
 
@@ -311,7 +311,7 @@ void MainWindow::navigateTo(const QString &page, const QString &data) {
 }
 
 void MainWindow::refreshCurrentPage() {
-    QString curId = m_playerBar->currentTrackId();
+    int curId = m_playerBar->currentTrackId();
     bool playing = m_playerBar->isPlaying();
 
     if (m_stack->currentIndex() == 0) {

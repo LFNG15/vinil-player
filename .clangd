@@ -9,4 +9,5 @@ CompileFlags:
     - -Isrc/pages
     - -Isrc/player
     - -Isrc/widgets
+    - -Isrc/database
     - -std=c++17

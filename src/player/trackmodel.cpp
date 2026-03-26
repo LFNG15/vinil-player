@@ -1,44 +1,58 @@
 #include "trackmodel.h"
+#include "database.h"
 #include <QRandomGenerator>
 #include <algorithm>
 
-TrackModel::TrackModel(QObject *parent) : QObject(parent) {}
+TrackModel::TrackModel(QObject *parent) : QObject(parent) {
+    Database::instance().open();
+    m_tracks = Database::instance().allTracks();
+}
 
 QList<Track> &TrackModel::tracks() { return m_tracks; }
 const QList<Track> &TrackModel::tracks() const { return m_tracks; }
 
 void TrackModel::addTrack(const Track &track) {
-    m_tracks.append(track);
+    int folderId = Database::instance().findOrCreateFolder(
+        track.folder, track.cover.c1, track.cover.c2);
+
+    int newId = Database::instance().insertTrack(track, folderId);
+
+    Track t    = track;
+    t.id       = newId;
+    t.folderId = folderId;
+    m_tracks.prepend(t);
     emit tracksChanged();
 }
 
-void TrackModel::removeTrack(const QString &id) {
+void TrackModel::removeTrack(int id) {
+    Database::instance().deleteTrack(id);
     m_tracks.erase(std::remove_if(m_tracks.begin(), m_tracks.end(),
-        [&](const Track &t) { return t.id == id; }), m_tracks.end());
+        [id](const Track &t) { return t.id == id; }), m_tracks.end());
     emit tracksChanged();
 }
 
-void TrackModel::toggleLike(const QString &id) {
+void TrackModel::toggleLike(int id) {
     for (auto &t : m_tracks) {
         if (t.id == id) {
             t.liked = !t.liked;
+            Database::instance().setLiked(id, t.liked);
             emit tracksChanged();
             return;
         }
     }
 }
 
-void TrackModel::setDuration(const QString &id, qint64 ms) {
+void TrackModel::setDuration(int id, qint64 ms) {
     for (auto &t : m_tracks) {
         if (t.id == id) {
             t.durationMs = ms;
-            emit tracksChanged();
+            Database::instance().setDuration(id, ms);
             return;
         }
     }
 }
 
-Track *TrackModel::findTrack(const QString &id) {
+Track *TrackModel::findTrack(int id) {
     for (auto &t : m_tracks) {
         if (t.id == id) return &t;
     }
@@ -49,9 +63,13 @@ QList<Folder> TrackModel::folders() const {
     QStringList seen;
     QList<Folder> result;
     for (auto &t : m_tracks) {
-        if (!seen.contains(t.folder)) {
+        if (!t.folder.isEmpty() && !seen.contains(t.folder)) {
             seen.append(t.folder);
-            result.append({ t.folder });
+            Folder f;
+            f.id   = t.folderId;
+            f.name = t.folder;
+            f.cover = t.cover;
+            result.append(f);
         }
     }
     return result;

@@ -9,11 +9,11 @@ class LikedPage : public QWidget {
     Q_OBJECT
 public:
     explicit LikedPage(TrackModel *model, QWidget *parent = nullptr);
-    void refresh(const QString &currentTrackId, bool isPlaying);
+    void refresh(int currentTrackId, bool isPlaying);
 
 signals:
     void playRequested(const Track &track);
-    void likeToggled(const QString &id);
+    void likeToggled(int id);
     void navigateBack();
 
 private:

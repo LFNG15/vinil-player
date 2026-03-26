@@ -1,4 +1,4 @@
-QT       += core gui widgets multimedia
+QT       += core gui widgets multimedia sql
 
 TARGET = VinilPlayer
 TEMPLATE = app
@@ -9,10 +9,12 @@ INCLUDEPATH += \
     src \
     src/pages \
     src/player \
-    src/widgets
+    src/widgets \
+    src/database
 
 SOURCES += \
     src/main.cpp \
+    src/database/database.cpp \
     src/mainwindow.cpp \
     src/pages/homepage.cpp \
     src/pages/addmusicpage.cpp \
@@ -26,6 +28,7 @@ SOURCES += \
 
 HEADERS += \
     src/mainwindow.h \
+    src/database/database.h \
     src/pages/homepage.h \
     src/pages/addmusicpage.h \
     src/pages/folderspage.h \

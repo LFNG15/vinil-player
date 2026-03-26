@@ -215,7 +215,7 @@ void PlayerBar::playTrack(const Track &track) {
 }
 
 void PlayerBar::togglePlay() {
-    if (m_currentTrackId.isEmpty()) return;
+    if (m_currentTrackId == 0) return;
 
     if (m_player->playbackState() == QMediaPlayer::PlayingState) {
         m_player->pause();
@@ -231,7 +231,7 @@ void PlayerBar::togglePlay() {
 }
 
 void PlayerBar::next() {
-    if (m_currentTrackId.isEmpty()) return;
+    if (m_currentTrackId == 0) return;
     auto &tracks = m_model->tracks();
     int idx = -1;
     for (int i = 0; i < tracks.size(); ++i) {
@@ -246,13 +246,13 @@ void PlayerBar::next() {
         nextIdx = m_model->nextIndex(idx, m_shuffle);
     }
     if (nextIdx >= 0 && nextIdx < tracks.size()) {
-        m_currentTrackId.clear(); // force reload
+        m_currentTrackId = 0; // force reload
         playTrack(tracks[nextIdx]);
     }
 }
 
 void PlayerBar::prev() {
-    if (m_currentTrackId.isEmpty()) return;
+    if (m_currentTrackId == 0) return;
     if (m_player->position() > 3000) {
         m_player->setPosition(0);
         return;
@@ -266,7 +266,7 @@ void PlayerBar::prev() {
 
     int prevIdx = m_model->prevIndex(idx);
     if (prevIdx >= 0 && prevIdx < tracks.size()) {
-        m_currentTrackId.clear();
+        m_currentTrackId = 0;
         playTrack(tracks[prevIdx]);
     }
 }
@@ -274,7 +274,7 @@ void PlayerBar::prev() {
 void PlayerBar::setShuffle(bool on) { m_shuffle = on; }
 void PlayerBar::setRepeat(bool on) { m_repeat = on; }
 bool PlayerBar::isPlaying() const { return m_player->playbackState() == QMediaPlayer::PlayingState; }
-QString PlayerBar::currentTrackId() const { return m_currentTrackId; }
+int  PlayerBar::currentTrackId() const { return m_currentTrackId; }
 
 void PlayerBar::onPositionChanged(qint64 pos) {
     m_timeLabel->setText(Theme::formatTime(pos));
@@ -286,7 +286,7 @@ void PlayerBar::onPositionChanged(qint64 pos) {
 
 void PlayerBar::onDurationChanged(qint64 dur) {
     m_durationLabel->setText(Theme::formatTime(dur));
-    if (!m_currentTrackId.isEmpty()) {
+    if (m_currentTrackId != 0) {
         m_model->setDuration(m_currentTrackId, dur);
     }
 }

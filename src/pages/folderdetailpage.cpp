@@ -30,7 +30,7 @@ void FolderDetailPage::setFolder(const QString &folderName) {
     m_folderName = folderName;
 }
 
-void FolderDetailPage::refresh(const QString &currentTrackId, bool isPlaying) {
+void FolderDetailPage::refresh(int currentTrackId, bool isPlaying) {
     QLayoutItem *item;
     while ((item = m_contentLayout->takeAt(0)) != nullptr) {
         if (item->widget()) item->widget()->deleteLater();
@@ -162,7 +162,7 @@ void FolderDetailPage::refresh(const QString &currentTrackId, bool isPlaying) {
         likeBtn->setCursor(Qt::PointingHandCursor);
         likeBtn->setStyleSheet(QString("QPushButton { background: transparent; color: %1; border: none; font-size: 14px; font-family: \"Segoe MDL2 Assets\"; }").arg(
             track.liked ? Theme::accent().name() : Theme::textMuted().name()));
-        QString lid = track.id;
+        int lid = track.id;
         connect(likeBtn, &QPushButton::clicked, [this, lid]() { emit likeToggled(lid); });
         layout->addWidget(likeBtn);
 
@@ -178,7 +178,7 @@ void FolderDetailPage::refresh(const QString &currentTrackId, bool isPlaying) {
         delBtn->setCursor(Qt::PointingHandCursor);
         delBtn->setStyleSheet(QString("QPushButton { background: transparent; color: %1; border: none; font-size: 11px; font-family: \"Segoe MDL2 Assets\"; } QPushButton:hover { color: %2; }").arg(
             Theme::textMuted().name(), Theme::danger().name()));
-        QString did = track.id;
+        int did = track.id;
         connect(delBtn, &QPushButton::clicked, [this, did]() { emit deleteRequested(did); });
         layout->addWidget(delBtn);
 

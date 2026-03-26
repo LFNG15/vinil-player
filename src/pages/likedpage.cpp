@@ -26,7 +26,7 @@ LikedPage::LikedPage(TrackModel *model, QWidget *parent)
     outerLayout->addWidget(scroll);
 }
 
-void LikedPage::refresh(const QString &currentTrackId, bool isPlaying) {
+void LikedPage::refresh(int currentTrackId, bool isPlaying) {
     QLayoutItem *item;
     while ((item = m_contentLayout->takeAt(0)) != nullptr) {
         if (item->widget()) item->widget()->deleteLater();
@@ -157,7 +157,7 @@ void LikedPage::refresh(const QString &currentTrackId, bool isPlaying) {
         likeBtn->setFixedSize(28, 28);
         likeBtn->setCursor(Qt::PointingHandCursor);
         likeBtn->setStyleSheet(QString("QPushButton { background: transparent; color: %1; border: none; font-size: 14px; font-family: \"Segoe MDL2 Assets\"; }").arg(Theme::accent().name()));
-        QString lid = track.id;
+        int lid = track.id;
         connect(likeBtn, &QPushButton::clicked, [this, lid]() { emit likeToggled(lid); });
         layout->addWidget(likeBtn);
 

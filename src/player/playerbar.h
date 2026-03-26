@@ -23,10 +23,10 @@ public:
     void setRepeat(bool on);
 
     bool isPlaying() const;
-    QString currentTrackId() const;
+    int  currentTrackId() const;
 
 signals:
-    void trackChanged(const QString &trackId);
+    void trackChanged(int trackId);
     void playingChanged(bool playing);
 
 private slots:
@@ -61,7 +61,7 @@ private:
 
     QWidget *m_controlsContainer;
 
-    QString m_currentTrackId;
+    int m_currentTrackId = 0;
     bool m_shuffle = false;
     bool m_repeat = false;
 };

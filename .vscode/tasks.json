@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Qt Project",
+            "type": "shell",
+            "command": "cmd",
+            "args": [
+                "/c",
+                "set PATH=D:\\Qt\\6.11.0\\mingw_64\\bin;D:\\Qt\\Tools\\mingw1310_64\\bin;%PATH% && D:\\Qt\\6.11.0\\mingw_64\\bin\\qmake.exe VinilPlayer.pro -spec win32-g++ CONFIG+=debug && D:\\Qt\\Tools\\mingw1310_64\\bin\\mingw32-make.exe -j4"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

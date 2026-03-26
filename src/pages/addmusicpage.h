@@ -1,0 +1,57 @@
+#ifndef ADDMUSICPAGE_H
+#define ADDMUSICPAGE_H
+
+#include <QWidget>
+#include <QVBoxLayout>
+#include <QListWidget>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QPushButton>
+#include <QLabel>
+#include "theme.h"
+#include "trackmodel.h"
+
+struct PendingFile {
+    QString id;
+    QString title;
+    QString artist;
+    QString filePath;
+    qint64 fileSize;
+    Theme::GradientPair palette;
+};
+
+class AddMusicPage : public QWidget {
+    Q_OBJECT
+public:
+    explicit AddMusicPage(TrackModel *model, QWidget *parent = nullptr);
+    void refresh();
+
+signals:
+    void trackAdded(const Track &track);
+    void navigateBack();
+
+protected:
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
+    void dragLeaveEvent(QDragLeaveEvent *event) override;
+
+private:
+    void processFiles(const QStringList &paths);
+    void refreshFileList();
+    void addAllToLibrary();
+
+    TrackModel *m_model;
+    QList<PendingFile> m_pendingFiles;
+
+    QWidget *m_dropZone;
+    QLabel *m_dropLabel;
+    QVBoxLayout *m_fileListLayout;
+    QWidget *m_fileListContainer;
+    QComboBox *m_folderCombo;
+    QLineEdit *m_newFolderEdit;
+    QPushButton *m_addBtn;
+    QWidget *m_folderSection;
+    bool m_isDragOver = false;
+};
+
+#endif // ADDMUSICPAGE_H

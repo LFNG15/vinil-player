@@ -1,0 +1,29 @@
+#ifndef HOMEPAGE_H
+#define HOMEPAGE_H
+
+#include <QWidget>
+#include <QVBoxLayout>
+#include <QScrollArea>
+#include "trackmodel.h"
+
+class HomePage : public QWidget {
+    Q_OBJECT
+public:
+    explicit HomePage(TrackModel *model, QWidget *parent = nullptr);
+    void refresh(const QString &currentTrackId, bool isPlaying);
+
+signals:
+    void playRequested(const Track &track);
+    void likeToggled(const QString &id);
+    void navigateTo(const QString &page, const QString &data = "");
+
+private:
+    QWidget *createTrackRow(const Track &track, int index, const QString &currentId, bool isPlaying);
+    QWidget *createFolderChip(const Folder &folder, int trackCount);
+
+    TrackModel *m_model;
+    QVBoxLayout *m_contentLayout;
+    QScrollArea *m_scroll;
+};
+
+#endif // HOMEPAGE_H

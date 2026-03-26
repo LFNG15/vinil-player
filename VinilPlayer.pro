@@ -1,0 +1,41 @@
+QT       += core gui widgets multimedia
+
+TARGET = VinilPlayer
+TEMPLATE = app
+
+CONFIG += c++17
+
+INCLUDEPATH += \
+    src \
+    src/pages \
+    src/player \
+    src/widgets
+
+SOURCES += \
+    src/main.cpp \
+    src/mainwindow.cpp \
+    src/pages/homepage.cpp \
+    src/pages/addmusicpage.cpp \
+    src/pages/folderspage.cpp \
+    src/pages/folderdetailpage.cpp \
+    src/pages/likedpage.cpp \
+    src/player/playerbar.cpp \
+    src/player/trackmodel.cpp \
+    src/widgets/vinylwidget.cpp \
+    src/widgets/clickableslider.cpp
+
+HEADERS += \
+    src/mainwindow.h \
+    src/pages/homepage.h \
+    src/pages/addmusicpage.h \
+    src/pages/folderspage.h \
+    src/pages/folderdetailpage.h \
+    src/pages/likedpage.h \
+    src/player/playerbar.h \
+    src/player/trackmodel.h \
+    src/widgets/vinylwidget.h \
+    src/widgets/clickableslider.h \
+    src/widgets/theme.h
+
+RESOURCES += \
+    resources/resources.qrc

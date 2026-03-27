@@ -76,7 +76,7 @@ AddMusicPage::AddMusicPage(TrackModel *model, QWidget *parent)
     m_dropLabel->setAlignment(Qt::AlignCenter);
     dropLayout->addWidget(m_dropLabel);
 
-    auto *formatLabel = new QLabel("MP3, WAV, OGG, M4A, AAC, FLAC");
+    auto *formatLabel = new QLabel("Somente arquivos OPUS");
     formatLabel->setFont(Theme::bodyFont(11));
     formatLabel->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::textMuted().name()));
     formatLabel->setAlignment(Qt::AlignCenter);
@@ -98,7 +98,7 @@ AddMusicPage::AddMusicPage(TrackModel *model, QWidget *parent)
     ).arg(Theme::card().name(), Theme::textSoft().name(), Theme::border().name(), Theme::cardHover().name()));
     connect(browseBtn, &QPushButton::clicked, [this]() {
         QStringList files = QFileDialog::getOpenFileNames(this, "Selecionar Músicas", QString(),
-            "Áudio (*.mp3 *.wav *.ogg *.m4a *.aac *.flac *.wma *.webm);;Todos (*.*)");
+            "Opus (*.opus)");
         if (!files.isEmpty()) processFiles(files);
     });
     layout->addWidget(browseBtn, 0, Qt::AlignLeft);
@@ -228,7 +228,7 @@ void AddMusicPage::dragLeaveEvent(QDragLeaveEvent *) {
 }
 
 void AddMusicPage::processFiles(const QStringList &paths) {
-    QStringList audioExts = {"mp3", "wav", "ogg", "m4a", "aac", "flac", "wma", "webm"};
+    QStringList audioExts = {"opus"};
 
     for (auto &path : paths) {
         QFileInfo fi(path);

@@ -123,9 +123,15 @@ PlayerBar::PlayerBar(TrackModel *model, QWidget *parent)
     auto *volLayout = new QHBoxLayout();
     volLayout->setSpacing(8);
 
-    auto *volIcon = new QLabel("\uE15D", this);
-    volIcon->setFont(Theme::iconFont(14));
-    volIcon->setStyleSheet("background: transparent;");
+    m_volIcon = new QPushButton("\uE15D", this);
+    m_volIcon->setFixedSize(24, 24);
+    m_volIcon->setCursor(Qt::PointingHandCursor);
+    m_volIcon->setFont(Theme::iconFont(14));
+    m_volIcon->setToolTip("Silenciar");
+    m_volIcon->setStyleSheet(QString(
+        "QPushButton { background: transparent; color: %1; border: none; border-radius: 4px; }"
+        "QPushButton:hover { color: %2; background: rgba(255,255,255,0.05); }"
+    ).arg(Theme::textMuted().name(), Theme::textSoft().name()));
 
     m_volumeSlider = new ClickableSlider(Qt::Horizontal, this);
     m_volumeSlider->setRange(0, 100);
@@ -134,7 +140,7 @@ PlayerBar::PlayerBar(TrackModel *model, QWidget *parent)
     m_volumeSlider->setStyleSheet(sliderStyle(Theme::textSoft().name()));
 
     volLayout->addStretch();
-    volLayout->addWidget(volIcon);
+    volLayout->addWidget(m_volIcon);
     volLayout->addWidget(m_volumeSlider);
 
     auto *rightWidget = new QWidget(this);
@@ -175,8 +181,17 @@ PlayerBar::PlayerBar(TrackModel *model, QWidget *parent)
         }
     });
 
+    connect(m_volIcon, &QPushButton::clicked, this, [this]() {
+        m_audioOutput->setMuted(!m_audioOutput->isMuted());
+        updateVolIcon();
+    });
+
     connect(m_volumeSlider, &QSlider::sliderMoved, this, [this](int val) {
         m_audioOutput->setVolume(val / 100.0);
+        if (m_audioOutput->isMuted()) {
+            m_audioOutput->setMuted(false);
+            updateVolIcon();
+        }
     });
 
     connect(m_player, &QMediaPlayer::positionChanged, this, &PlayerBar::onPositionChanged);
@@ -314,6 +329,12 @@ QString PlayerBar::buttonStyle(bool active) const {
         "QPushButton { background: transparent; color: %1; border: none; border-radius: 16px; font-size: 14px; font-family: \"Segoe MDL2 Assets\"; }"
         "QPushButton:hover { color: %2; background: rgba(255,255,255,0.05); }"
     ).arg(color, hoverColor);
+}
+
+void PlayerBar::updateVolIcon() {
+    bool muted = m_audioOutput->isMuted();
+    m_volIcon->setText(muted ? "\uE198" : "\uE15D");
+    m_volIcon->setToolTip(muted ? "Ativar som" : "Silenciar");
 }
 
 QString PlayerBar::sliderStyle(const QString &accentColor) const {

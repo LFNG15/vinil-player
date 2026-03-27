@@ -58,12 +58,15 @@ private:
 
     ClickableSlider *m_progressSlider;
     ClickableSlider *m_volumeSlider;
+    QPushButton     *m_volIcon;
 
     QWidget *m_controlsContainer;
 
-    int m_currentTrackId = 0;
+    int  m_currentTrackId = 0;
     bool m_shuffle = false;
-    bool m_repeat = false;
+    bool m_repeat  = false;
+
+    void updateVolIcon();
 };
 
 #endif // PLAYERBAR_H

@@ -9,6 +9,11 @@
 #include <QFrame>
 #include <QUuid>
 #include <QRegularExpression>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QStandardPaths>
+#include <QProcessEnvironment>
 #include <algorithm>
 
 AddMusicPage::AddMusicPage(TrackModel *model, QWidget *parent)
@@ -51,6 +56,64 @@ AddMusicPage::AddMusicPage(TrackModel *model, QWidget *parent)
     subtitle->setFont(Theme::bodyFont(13));
     subtitle->setStyleSheet(QString("color: %1; background: transparent; padding-bottom: 12px;").arg(Theme::textSoft().name()));
     layout->addWidget(subtitle);
+
+    // ── URL / YouTube ─────────────────────────────────────────────
+    auto *urlCard = new QWidget();
+    urlCard->setObjectName("urlCard");
+    urlCard->setStyleSheet(QString("QWidget#urlCard { background: %1; border-radius: 12px; }")
+        .arg(Theme::card().name()));
+
+    auto *urlCardLayout = new QVBoxLayout(urlCard);
+    urlCardLayout->setContentsMargins(16, 14, 16, 14);
+    urlCardLayout->setSpacing(8);
+
+    auto *urlHeader = new QLabel("\uE774  Download via YouTube");
+    urlHeader->setFont(Theme::bodyFont(12));
+    urlHeader->setStyleSheet(QString("color: %1; background: transparent; font-weight: bold;")
+        .arg(Theme::accent().name()));
+    urlCardLayout->addWidget(urlHeader);
+
+    auto *urlRow = new QHBoxLayout();
+    urlRow->setSpacing(8);
+
+    m_urlEdit = new QLineEdit();
+    m_urlEdit->setPlaceholderText("https://www.youtube.com/watch?v=...");
+    m_urlEdit->setFont(Theme::bodyFont(12));
+    m_urlEdit->setStyleSheet(QString(R"(
+        QLineEdit {
+            background: %1; color: %2; border: 1px solid %3;
+            border-radius: 8px; padding: 8px 12px;
+        }
+        QLineEdit:focus { border-color: %4; }
+    )").arg(Theme::surface().name(), Theme::text().name(),
+            Theme::border().name(), Theme::accent().name()));
+    urlRow->addWidget(m_urlEdit, 1);
+
+    m_downloadBtn = new QPushButton("Baixar");
+    m_downloadBtn->setFixedSize(80, 36);
+    m_downloadBtn->setCursor(Qt::PointingHandCursor);
+    m_downloadBtn->setFont(Theme::bodyFont(12));
+    m_downloadBtn->setStyleSheet(QString(
+        "QPushButton { background: %1; color: %2; border: none; border-radius: 8px; font-weight: bold; }"
+        "QPushButton:hover { background: %3; }"
+        "QPushButton:disabled { background: %4; color: %5; }"
+    ).arg(Theme::accent().name(), Theme::bg().name(),
+          Theme::accent().lighter(110).name(),
+          Theme::border().name(), Theme::textMuted().name()));
+    connect(m_downloadBtn, &QPushButton::clicked, this, &AddMusicPage::startDownload);
+    connect(m_urlEdit, &QLineEdit::returnPressed,  this, &AddMusicPage::startDownload);
+    urlRow->addWidget(m_downloadBtn);
+
+    urlCardLayout->addLayout(urlRow);
+
+    m_downloadStatus = new QLabel();
+    m_downloadStatus->setFont(Theme::bodyFont(11));
+    m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;")
+        .arg(Theme::textMuted().name()));
+    m_downloadStatus->hide();
+    urlCardLayout->addWidget(m_downloadStatus);
+
+    layout->addWidget(urlCard);
 
     // Drop zone
     m_dropZone = new QWidget();
@@ -351,6 +414,191 @@ void AddMusicPage::refreshFileList() {
     m_addBtn->setText(QString("Adicionar %1 Música%2")
         .arg(m_pendingFiles.size())
         .arg(m_pendingFiles.size() > 1 ? "s" : ""));
+}
+
+static QString findFfmpeg() {
+    QString found = QStandardPaths::findExecutable("ffmpeg");
+    if (!found.isEmpty()) return found;
+
+    QString localAppData = qgetenv("LOCALAPPDATA");
+    QString userProfile  = qgetenv("USERPROFILE");
+
+    QStringList candidates;
+
+    // WinGet (Gyan.FFmpeg)
+    QDir winget(localAppData + "/Microsoft/WinGet/Packages");
+    for (const auto &pkg : winget.entryList({"Gyan.FFmpeg*"}, QDir::Dirs)) {
+        QDir pkgDir(winget.filePath(pkg));
+        for (const auto &sub : pkgDir.entryList({"ffmpeg*"}, QDir::Dirs))
+            candidates << pkgDir.filePath(sub) + "/bin/ffmpeg.exe";
+    }
+
+    // Scoop
+    candidates << userProfile + "/scoop/apps/ffmpeg/current/bin/ffmpeg.exe";
+    // Chocolatey
+    candidates << "C:/ProgramData/chocolatey/bin/ffmpeg.exe";
+    // Manual
+    candidates << "C:/ffmpeg/bin/ffmpeg.exe";
+
+    for (const auto &c : candidates)
+        if (QFile::exists(c)) return c;
+    return {};
+}
+
+static QString findYtDlp() {
+    // 1. Check PATH via Qt
+    QString found = QStandardPaths::findExecutable("yt-dlp");
+    if (!found.isEmpty()) return found;
+
+    // 2. Search common Windows Python install locations
+    QString localAppData = qgetenv("LOCALAPPDATA");
+    QString appData      = qgetenv("APPDATA");
+
+    QStringList scriptsDirs;
+
+    // Python from Microsoft Store (Packages)
+    QDir packagesDir(localAppData + "/Packages");
+    for (const auto &entry : packagesDir.entryList({"PythonSoftwareFoundation.Python*"}, QDir::Dirs)) {
+        QString base = localAppData + "/Packages/" + entry + "/LocalCache/local-packages";
+        for (const auto &ver : QDir(base).entryList({"Python3*"}, QDir::Dirs))
+            scriptsDirs << base + "/" + ver + "/Scripts";
+    }
+
+    // Regular Python install
+    QDir programsDir(localAppData + "/Programs/Python");
+    for (const auto &ver : programsDir.entryList({"Python3*"}, QDir::Dirs))
+        scriptsDirs << localAppData + "/Programs/Python/" + ver + "/Scripts";
+
+    // User site-packages (pip install --user)
+    QDir appDataPy(appData + "/Python");
+    for (const auto &ver : appDataPy.entryList({"Python3*"}, QDir::Dirs))
+        scriptsDirs << appData + "/Python/" + ver + "/Scripts";
+
+    for (const auto &dir : scriptsDirs) {
+        QString candidate = dir + "/yt-dlp.exe";
+        if (QFile::exists(candidate)) return candidate;
+    }
+    return {};
+}
+
+void AddMusicPage::startDownload() {
+    if (m_downloadProcess) return;
+
+    QString url = m_urlEdit->text().trimmed();
+    if (url.isEmpty()) return;
+
+    if (!url.contains("youtube.com") && !url.contains("youtu.be")) {
+        m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::danger().name()));
+        m_downloadStatus->setText("Use um link do YouTube (youtube.com ou youtu.be).");
+        m_downloadStatus->show();
+        return;
+    }
+
+    QString outDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/downloads";
+    QDir().mkpath(outDir);
+    m_existingOpusFiles = QDir(outDir).entryList({"*.opus"}, QDir::Files);
+
+    m_downloadBtn->setEnabled(false);
+    m_lastDownloadOutput.clear();
+    m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::textMuted().name()));
+    m_downloadStatus->setText("Conectando...");
+    m_downloadStatus->show();
+
+    m_downloadProcess = new QProcess(this);
+    m_downloadProcess->setProcessChannelMode(QProcess::MergedChannels);
+
+    connect(m_downloadProcess, &QProcess::readyReadStandardOutput, this, [this]() {
+        QString out = QString::fromUtf8(m_downloadProcess->readAllStandardOutput()).trimmed();
+        // buffer last meaningful line for error reporting
+        for (const auto &line : out.split('\n')) {
+            QString l = line.trimmed();
+            if (!l.isEmpty()) m_lastDownloadOutput = l;
+        }
+        if (out.contains("[download]")) {
+            QRegularExpression re(R"((\d+\.?\d*)%)");
+            auto match = re.match(out);
+            m_downloadStatus->setText(match.hasMatch()
+                ? QString("Baixando... %1%").arg(match.captured(1))
+                : "Baixando...");
+        } else if (out.contains("ExtractAudio") || out.contains("ffmpeg")) {
+            m_downloadStatus->setText("Convertendo para Opus...");
+        }
+    });
+
+    connect(m_downloadProcess, &QProcess::errorOccurred, this, [this](QProcess::ProcessError err) {
+        if (err == QProcess::FailedToStart) {
+            m_downloadProcess = nullptr;
+            m_downloadBtn->setEnabled(true);
+            m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::danger().name()));
+            m_downloadStatus->setText("yt-dlp não encontrado. Instale com: pip install yt-dlp");
+        }
+    });
+
+    connect(m_downloadProcess, &QProcess::finished, this,
+            [this](int exitCode, QProcess::ExitStatus exitStatus) {
+        m_downloadProcess = nullptr;
+        m_downloadBtn->setEnabled(true);
+
+        if (exitCode != 0 || exitStatus != QProcess::NormalExit) {
+            m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::danger().name()));
+            QString detail = m_lastDownloadOutput.isEmpty()
+                ? "Verifique o link ou tente novamente."
+                : m_lastDownloadOutput;
+            m_downloadStatus->setText("Erro: " + detail);
+            m_downloadStatus->setWordWrap(true);
+            return;
+        }
+
+        QString outDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/downloads";
+        QStringList current = QDir(outDir).entryList({"*.opus"}, QDir::Files);
+        QStringList added;
+        for (const auto &f : current)
+            if (!m_existingOpusFiles.contains(f)) added.append(outDir + "/" + f);
+
+        if (added.isEmpty()) {
+            m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::danger().name()));
+            m_downloadStatus->setText("Download concluído, mas nenhum arquivo .opus encontrado.");
+            return;
+        }
+
+        m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::accent().name()));
+        m_downloadStatus->setText(QString("Concluído! %1 arquivo%2 pronto%3 para adicionar.")
+            .arg(added.size())
+            .arg(added.size() > 1 ? "s" : "")
+            .arg(added.size() > 1 ? "s" : ""));
+        m_urlEdit->clear();
+        processFiles(added);
+    });
+
+    QString ytDlp = findYtDlp();
+    if (ytDlp.isEmpty()) {
+        m_downloadProcess = nullptr;
+        m_downloadBtn->setEnabled(true);
+        m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::danger().name()));
+        m_downloadStatus->setText("yt-dlp não encontrado. Instale com: pip install yt-dlp");
+        m_downloadStatus->show();
+        return;
+    }
+
+    // Add yt-dlp's directory to PATH
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.insert("PATH", QFileInfo(ytDlp).absolutePath() + ";" + env.value("PATH"));
+    m_downloadProcess->setProcessEnvironment(env);
+
+    QStringList args = {
+        "-x",
+        "--audio-format", "opus",
+        "--audio-quality", "0",
+        "-o", outDir + "/%(title)s.%(ext)s"
+    };
+
+    // Pass ffmpeg location explicitly if found
+    QString ffmpeg = findFfmpeg();
+    if (!ffmpeg.isEmpty())
+        args << "--ffmpeg-location" << QFileInfo(ffmpeg).absolutePath();
+
+    args << url;
+    m_downloadProcess->start(ytDlp, args);
 }
 
 void AddMusicPage::addAllToLibrary() {

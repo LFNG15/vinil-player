@@ -8,6 +8,7 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QLabel>
+#include <QProcess>
 #include "theme.h"
 #include "trackmodel.h"
 
@@ -39,19 +40,27 @@ private:
     void processFiles(const QStringList &paths);
     void refreshFileList();
     void addAllToLibrary();
+    void startDownload();
 
     TrackModel *m_model;
     QList<PendingFile> m_pendingFiles;
 
-    QWidget *m_dropZone;
-    QLabel *m_dropLabel;
+    QWidget     *m_dropZone;
+    QLabel      *m_dropLabel;
     QVBoxLayout *m_fileListLayout;
-    QWidget *m_fileListContainer;
-    QComboBox *m_folderCombo;
-    QLineEdit *m_newFolderEdit;
+    QWidget     *m_fileListContainer;
+    QComboBox   *m_folderCombo;
+    QLineEdit   *m_newFolderEdit;
     QPushButton *m_addBtn;
-    QWidget *m_folderSection;
-    bool m_isDragOver = false;
+    QWidget     *m_folderSection;
+    bool         m_isDragOver = false;
+
+    QLineEdit   *m_urlEdit          = nullptr;
+    QPushButton *m_downloadBtn      = nullptr;
+    QLabel      *m_downloadStatus   = nullptr;
+    QProcess    *m_downloadProcess  = nullptr;
+    QStringList  m_existingOpusFiles;
+    QString      m_lastDownloadOutput;
 };
 
 #endif // ADDMUSICPAGE_H

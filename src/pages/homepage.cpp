@@ -153,10 +153,11 @@ void HomePage::refresh(int currentTrackId, bool isPlaying) {
 QWidget *HomePage::createTrackRow(const Track &track, int index, int currentId, bool isPlaying) {
     bool active = (track.id == currentId);
     auto *row = new QWidget();
+    row->setObjectName("trackRow");
     row->setFixedHeight(52);
     row->setCursor(Qt::PointingHandCursor);
     row->setStyleSheet(QString(
-        "QWidget { background: %1; border-radius: 8px; border-left: 3px solid %2; }"
+        "QWidget#trackRow { background: %1; border-radius: 8px; border-left: 3px solid %2; }"
     ).arg(
         active ? "rgba(232,164,74,0.12)" : "transparent",
         active ? Theme::accent().name() : "transparent"

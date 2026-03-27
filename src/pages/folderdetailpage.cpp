@@ -127,13 +127,13 @@ void FolderDetailPage::refresh(int currentTrackId, bool isPlaying) {
         bool active = (track.id == currentTrackId);
 
         auto *row = new QWidget();
+        row->setObjectName("trackRow");
         row->setFixedHeight(52);
         row->setCursor(Qt::PointingHandCursor);
         row->setStyleSheet(QString(
             "QWidget#trackRow { background: %1; border-radius: 8px; border-left: 3px solid %2; }"
         ).arg(active ? "rgba(232,164,74,0.12)" : "transparent",
               active ? Theme::accent().name() : "transparent"));
-        row->setObjectName("trackRow");
 
         auto *layout = new QHBoxLayout(row);
         layout->setContentsMargins(12, 4, 12, 4);

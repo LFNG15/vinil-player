@@ -13,6 +13,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QDateTime>
 #include <QProcessEnvironment>
 #include <algorithm>
 
@@ -35,7 +36,6 @@ AddMusicPage::AddMusicPage(TrackModel *model, QWidget *parent)
     layout->setContentsMargins(32, 28, 32, 28);
     layout->setSpacing(12);
 
-    // Back button
     auto *backBtn = new QPushButton("←");
     backBtn->setFixedSize(34, 34);
     backBtn->setCursor(Qt::PointingHandCursor);
@@ -46,7 +46,6 @@ AddMusicPage::AddMusicPage(TrackModel *model, QWidget *parent)
     connect(backBtn, &QPushButton::clicked, this, &AddMusicPage::navigateBack);
     layout->addWidget(backBtn, 0, Qt::AlignLeft);
 
-    // Title
     auto *title = new QLabel("Inserção de Músicas");
     title->setFont(Theme::titleFont(28));
     title->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::text().name()));
@@ -57,7 +56,6 @@ AddMusicPage::AddMusicPage(TrackModel *model, QWidget *parent)
     subtitle->setStyleSheet(QString("color: %1; background: transparent; padding-bottom: 12px;").arg(Theme::textSoft().name()));
     layout->addWidget(subtitle);
 
-    // ── URL / YouTube ─────────────────────────────────────────────
     auto *urlCard = new QWidget();
     urlCard->setObjectName("urlCard");
     urlCard->setStyleSheet(QString("QWidget#urlCard { background: %1; border-radius: 12px; }")
@@ -183,7 +181,7 @@ AddMusicPage::AddMusicPage(TrackModel *model, QWidget *parent)
     folderLayout->setContentsMargins(0, 0, 0, 0);
     folderLayout->setSpacing(8);
 
-    auto *folderLabel = new QLabel("PASTA DE DESTINO");
+    auto *folderLabel = new QLabel("PLAYLIST DE DESTINO");
     folderLabel->setFont(Theme::bodyFont(11));
     folderLabel->setStyleSheet(QString("color: %1; background: transparent; font-weight: bold; letter-spacing: 1px;").arg(Theme::textSoft().name()));
     folderLayout->addWidget(folderLabel);
@@ -210,7 +208,7 @@ AddMusicPage::AddMusicPage(TrackModel *model, QWidget *parent)
     folderRow->addWidget(m_folderCombo);
 
     m_newFolderEdit = new QLineEdit();
-    m_newFolderEdit->setPlaceholderText("Nova pasta...");
+    m_newFolderEdit->setPlaceholderText("Nova playlist...");
     m_newFolderEdit->setFont(Theme::bodyFont(13));
     m_newFolderEdit->setMinimumWidth(160);
     m_newFolderEdit->setStyleSheet(QString(R"(
@@ -247,13 +245,27 @@ AddMusicPage::AddMusicPage(TrackModel *model, QWidget *parent)
 }
 
 void AddMusicPage::refresh() {
+    // Remove downloaded files that were never committed to library
+    QString downloadsDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/downloads";
+    for (auto &pf : m_pendingFiles) {
+        if (pf.filePath.startsWith(downloadsDir)) {
+            QFile::remove(pf.filePath);
+        }
+    }
+    m_pendingFiles.clear();
+    refreshFileList();
+
+    if (m_downloadStatus) {
+        m_downloadStatus->hide();
+        m_downloadStatus->clear();
+    }
+    if (m_urlEdit) m_urlEdit->clear();
+
     m_folderCombo->clear();
+    m_folderCombo->addItem("Sem playlist");
     auto folders = m_model->folders();
     for (auto &f : folders) {
         m_folderCombo->addItem(f.name);
-    }
-    if (folders.isEmpty()) {
-        m_folderCombo->addItem("Geral");
     }
 }
 
@@ -345,60 +357,89 @@ void AddMusicPage::refreshFileList() {
     header->setStyleSheet(QString("color: %1; background: transparent; font-weight: bold; padding-top: 8px;").arg(Theme::text().name()));
     m_fileListLayout->addWidget(header);
 
+    QString inputStyle = QString(R"(
+        QLineEdit {
+            background: %1; color: %2; border: 1px solid %3;
+            border-radius: 6px; padding: 5px 10px;
+        }
+        QLineEdit:focus { border-color: %4; }
+    )").arg(Theme::surface().name(), Theme::text().name(),
+            Theme::border().name(), Theme::accent().name());
+
+    QString labelStyle = QString("color: %1; background: transparent; font-weight: bold; letter-spacing: 0.5px;")
+        .arg(Theme::textMuted().name());
+
     for (int i = 0; i < m_pendingFiles.size(); ++i) {
         auto &pf = m_pendingFiles[i];
 
-        auto *row = new QWidget();
-        row->setFixedHeight(56);
-        row->setStyleSheet(QString("background: %1; border-radius: 8px;").arg(Theme::card().name()));
+        auto *card = new QWidget();
+        card->setObjectName("fileCard");
+        card->setStyleSheet(QString("QWidget#fileCard { background: %1; border-radius: 10px; }").arg(Theme::card().name()));
 
-        auto *rowLayout = new QHBoxLayout(row);
-        rowLayout->setContentsMargins(12, 6, 12, 6);
-        rowLayout->setSpacing(10);
+        auto *cardLayout = new QHBoxLayout(card);
+        cardLayout->setContentsMargins(14, 12, 14, 12);
+        cardLayout->setSpacing(14);
 
         // Color swatch
         auto *swatch = new QWidget();
-        swatch->setFixedSize(36, 36);
-        swatch->setStyleSheet(QString("background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 %1,stop:1 %2); border-radius: 6px;")
+        swatch->setFixedSize(44, 44);
+        swatch->setStyleSheet(QString("background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 %1,stop:1 %2); border-radius: 8px;")
             .arg(pf.palette.c1.name(), pf.palette.c2.name()));
-        rowLayout->addWidget(swatch);
+        cardLayout->addWidget(swatch, 0, Qt::AlignTop);
 
-        // Title + artist editable
-        auto *infoLayout = new QVBoxLayout();
-        infoLayout->setSpacing(1);
+        // Fields
+        auto *fieldsLayout = new QVBoxLayout();
+        fieldsLayout->setSpacing(6);
+        fieldsLayout->setContentsMargins(0, 0, 0, 0);
 
+        // Title field
+        auto *titleRow = new QVBoxLayout();
+        titleRow->setSpacing(2);
+        auto *titleLabel = new QLabel("Nome da música");
+        titleLabel->setFont(Theme::bodyFont(10));
+        titleLabel->setStyleSheet(labelStyle);
         auto *titleEdit = new QLineEdit(pf.title);
-        titleEdit->setFont(Theme::bodyFont(13));
-        titleEdit->setStyleSheet(QString("QLineEdit { background: transparent; border: none; color: %1; font-weight: 600; padding: 0; }").arg(Theme::text().name()));
+        titleEdit->setFont(Theme::bodyFont(12));
+        titleEdit->setStyleSheet(inputStyle);
+        titleEdit->setPlaceholderText("Título da música");
         int idx = i;
         connect(titleEdit, &QLineEdit::textChanged, [this, idx](const QString &text) {
             if (idx < m_pendingFiles.size()) m_pendingFiles[idx].title = text;
         });
-        infoLayout->addWidget(titleEdit);
+        titleRow->addWidget(titleLabel);
+        titleRow->addWidget(titleEdit);
+        fieldsLayout->addLayout(titleRow);
 
+        // Artist field
+        auto *artistRow = new QVBoxLayout();
+        artistRow->setSpacing(2);
+        auto *artistLabel = new QLabel("Nome do artista");
+        artistLabel->setFont(Theme::bodyFont(10));
+        artistLabel->setStyleSheet(labelStyle);
         auto *artistEdit = new QLineEdit(pf.artist);
-        artistEdit->setFont(Theme::bodyFont(11));
-        artistEdit->setStyleSheet(QString("QLineEdit { background: transparent; border: none; color: %1; padding: 0; }").arg(Theme::textSoft().name()));
+        artistEdit->setFont(Theme::bodyFont(12));
+        artistEdit->setStyleSheet(inputStyle);
+        artistEdit->setPlaceholderText("Nome do artista");
         connect(artistEdit, &QLineEdit::textChanged, [this, idx](const QString &text) {
             if (idx < m_pendingFiles.size()) m_pendingFiles[idx].artist = text;
         });
-        infoLayout->addWidget(artistEdit);
+        artistRow->addWidget(artistLabel);
+        artistRow->addWidget(artistEdit);
+        fieldsLayout->addLayout(artistRow);
 
-        rowLayout->addLayout(infoLayout, 1);
+        cardLayout->addLayout(fieldsLayout, 1);
 
-        // Size
-        auto *sizeLabel = new QLabel(QString("%1 MB").arg(pf.fileSize / (1024.0 * 1024.0), 0, 'f', 1));
-        sizeLabel->setFont(Theme::monoFont(10));
-        sizeLabel->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::textMuted().name()));
-        rowLayout->addWidget(sizeLabel);
+        // Right side: size + remove
+        auto *rightLayout = new QVBoxLayout();
+        rightLayout->setSpacing(4);
+        rightLayout->setContentsMargins(0, 0, 0, 0);
 
-        // Remove button
         auto *removeBtn = new QPushButton("✕");
         removeBtn->setFixedSize(28, 28);
         removeBtn->setCursor(Qt::PointingHandCursor);
         removeBtn->setStyleSheet(QString(
-            "QPushButton { background: transparent; color: %1; border: none; font-size: 14px; }"
-            "QPushButton:hover { color: %2; }"
+            "QPushButton { background: transparent; color: %1; border: none; font-size: 14px; border-radius: 14px; }"
+            "QPushButton:hover { background: rgba(255,255,255,0.08); color: %2; }"
         ).arg(Theme::textMuted().name(), Theme::danger().name()));
         QString fileId = pf.id;
         connect(removeBtn, &QPushButton::clicked, [this, fileId]() {
@@ -406,9 +447,18 @@ void AddMusicPage::refreshFileList() {
                 [&](const PendingFile &f) { return f.id == fileId; }), m_pendingFiles.end());
             refreshFileList();
         });
-        rowLayout->addWidget(removeBtn);
+        rightLayout->addWidget(removeBtn, 0, Qt::AlignRight | Qt::AlignTop);
 
-        m_fileListLayout->addWidget(row);
+        auto *sizeLabel = new QLabel(QString("%1 MB").arg(pf.fileSize / (1024.0 * 1024.0), 0, 'f', 1));
+        sizeLabel->setFont(Theme::monoFont(10));
+        sizeLabel->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::textMuted().name()));
+        sizeLabel->setAlignment(Qt::AlignRight);
+        rightLayout->addWidget(sizeLabel, 0, Qt::AlignRight | Qt::AlignBottom);
+        rightLayout->addStretch();
+
+        cardLayout->addLayout(rightLayout);
+
+        m_fileListLayout->addWidget(card);
     }
 
     m_addBtn->setText(QString("Adicionar %1 Música%2")
@@ -496,7 +546,9 @@ void AddMusicPage::startDownload() {
 
     QString outDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/downloads";
     QDir().mkpath(outDir);
-    m_existingOpusFiles = QDir(outDir).entryList({"*.opus"}, QDir::Files);
+
+    // Unique prefix per download session — avoids any before/after comparison issues
+    m_downloadPrefix = QString::number(QDateTime::currentMSecsSinceEpoch());
 
     m_downloadBtn->setEnabled(false);
     m_lastDownloadOutput.clear();
@@ -550,10 +602,10 @@ void AddMusicPage::startDownload() {
         }
 
         QString outDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/downloads";
-        QStringList current = QDir(outDir).entryList({"*.opus"}, QDir::Files);
+        // Find files that match the unique prefix for this download session
         QStringList added;
-        for (const auto &f : current)
-            if (!m_existingOpusFiles.contains(f)) added.append(outDir + "/" + f);
+        for (const auto &f : QDir(outDir).entryList({m_downloadPrefix + "_*.opus"}, QDir::Files))
+            added.append(outDir + "/" + f);
 
         if (added.isEmpty()) {
             m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::danger().name()));
@@ -589,7 +641,7 @@ void AddMusicPage::startDownload() {
         "-x",
         "--audio-format", "opus",
         "--audio-quality", "0",
-        "-o", outDir + "/%(title)s.%(ext)s"
+        "-o", outDir + "/" + m_downloadPrefix + "_%(title)s.%(ext)s"
     };
 
     // Pass ffmpeg location explicitly if found
@@ -607,8 +659,8 @@ void AddMusicPage::addAllToLibrary() {
     QString folder = m_newFolderEdit->text().trimmed();
     if (folder.isEmpty()) {
         folder = m_folderCombo->currentText();
+        if (folder == "Sem playlist") folder = "";
     }
-    if (folder.isEmpty()) folder = "Geral";
 
     for (auto &pf : m_pendingFiles) {
         Track t = Track::create(pf.title, pf.artist, folder, QUrl::fromLocalFile(pf.filePath));

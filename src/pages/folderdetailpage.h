@@ -19,8 +19,12 @@ signals:
     void navigateBack();
 
 private:
+    void showEditDialog();
+    void showMoveDialog(int trackId);
+
     TrackModel *m_model;
     QString m_folderName;
+    int m_folderId = 0;
     QVBoxLayout *m_contentLayout;
 };
 

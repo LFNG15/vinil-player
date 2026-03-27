@@ -77,9 +77,9 @@ void Database::applySchema() {
     )");
 
     q.exec("INSERT OR IGNORE INTO playback_state (id) VALUES (1)");
+    q.exec("INSERT OR IGNORE INTO folders (id, name, cover_color1, cover_color2) VALUES (0, '', '#e8a44a', '#d45d5d')");
 }
 
-// ─── Folders ────────────────────────────────────────────────────────────────
 
 int Database::findOrCreateFolder(const QString &name, const QColor &c1, const QColor &c2) {
     QSqlQuery q;
@@ -98,7 +98,7 @@ int Database::findOrCreateFolder(const QString &name, const QColor &c1, const QC
 
 QList<Folder> Database::allFolders() {
     QList<Folder> result;
-    QSqlQuery q("SELECT id, name, cover_color1, cover_color2 FROM folders ORDER BY name");
+    QSqlQuery q("SELECT id, name, cover_color1, cover_color2 FROM folders WHERE id != 0 ORDER BY name");
     while (q.next()) {
         Folder f;
         f.id       = q.value(0).toInt();
@@ -110,7 +110,60 @@ QList<Folder> Database::allFolders() {
     return result;
 }
 
-// ─── Tracks ─────────────────────────────────────────────────────────────────
+int Database::createFolder(const QString &name, const QColor &c1, const QColor &c2) {
+    QSqlQuery q;
+    q.prepare("INSERT OR IGNORE INTO folders (name, cover_color1, cover_color2) VALUES (?, ?, ?)");
+    q.addBindValue(name);
+    q.addBindValue(c1.name());
+    q.addBindValue(c2.name());
+    q.exec();
+    if (q.lastInsertId().toInt() > 0) return q.lastInsertId().toInt();
+    // already existed - return its id
+    q.prepare("SELECT id FROM folders WHERE name = ?");
+    q.addBindValue(name);
+    q.exec();
+    return q.next() ? q.value(0).toInt() : 0;
+}
+
+void Database::renameFolder(int id, const QString &newName) {
+    QSqlQuery q;
+    q.prepare("UPDATE folders SET name = ? WHERE id = ?");
+    q.addBindValue(newName);
+    q.addBindValue(id);
+    q.exec();
+    // Update all tracks that referenced this folder name
+    q.prepare("UPDATE tracks SET folder_id = folder_id WHERE folder_id = ?");
+    q.addBindValue(id);
+    q.exec();
+}
+
+void Database::updateFolderCover(int id, const QColor &c1, const QColor &c2) {
+    QSqlQuery q;
+    q.prepare("UPDATE folders SET cover_color1 = ?, cover_color2 = ? WHERE id = ?");
+    q.addBindValue(c1.name());
+    q.addBindValue(c2.name());
+    q.addBindValue(id);
+    q.exec();
+}
+
+void Database::deleteFolder(int id) {
+    QSqlQuery q;
+    q.prepare("UPDATE tracks SET folder_id = 0 WHERE folder_id = ?");
+    q.addBindValue(id);
+    q.exec();
+    q.prepare("DELETE FROM folders WHERE id = ?");
+    q.addBindValue(id);
+    q.exec();
+}
+
+void Database::moveTrackToFolder(int trackId, int folderId) {
+    QSqlQuery q;
+    q.prepare("UPDATE tracks SET folder_id = ? WHERE id = ?");
+    q.addBindValue(folderId);
+    q.addBindValue(trackId);
+    q.exec();
+}
+
 
 Track Database::rowToTrack(const QSqlQuery &q) const {
     Track t;
@@ -190,7 +243,6 @@ QList<Track> Database::allTracks() {
     return result;
 }
 
-// ─── Playback state ──────────────────────────────────────────────────────────
 
 Database::PlaybackState Database::loadState() {
     PlaybackState s;

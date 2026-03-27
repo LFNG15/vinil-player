@@ -59,7 +59,7 @@ private:
     QPushButton *m_downloadBtn      = nullptr;
     QLabel      *m_downloadStatus   = nullptr;
     QProcess    *m_downloadProcess  = nullptr;
-    QStringList  m_existingOpusFiles;
+    QString      m_downloadPrefix;
     QString      m_lastDownloadOutput;
 };
 

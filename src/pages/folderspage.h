@@ -5,6 +5,7 @@
 #include <QVBoxLayout>
 #include <QScrollArea>
 #include "trackmodel.h"
+#include "theme.h"
 
 class FoldersPage : public QWidget {
     Q_OBJECT
@@ -14,6 +15,12 @@ public:
 
 signals:
     void folderSelected(const QString &folderName);
+
+private slots:
+    void showCreateDialog();
+    void showRenameDialog(int id, const QString &currentName);
+    void showCoverDialog(int id, const Theme::GradientPair &current);
+    void showDeleteConfirm(int id, const QString &name);
 
 private:
     TrackModel *m_model;

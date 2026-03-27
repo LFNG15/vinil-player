@@ -74,7 +74,6 @@ inline ThemeData themeById(const QString &id) {
     return warmTheme();
 }
 
-// ─── Colors ── delegates to active theme ─────────────────────
 inline QColor bg()          { return activeTheme().bg; }
 inline QColor surface()     { return activeTheme().surface; }
 inline QColor card()        { return activeTheme().card; }
@@ -88,7 +87,6 @@ inline QColor border()      { return activeTheme().border; }
 inline QColor danger()      { return activeTheme().danger; }
 inline QColor vinylBlack()  { return activeTheme().vinylBlack; }
 
-// ─── Gradients (as pairs of colors for covers) ──────────────────
 struct GradientPair {
     QColor c1, c2;
 };
@@ -113,7 +111,6 @@ inline GradientPair randomPalette() {
     return p[QRandomGenerator::global()->bounded(p.size())];
 }
 
-// ─── Fonts ───────────────────────────────────────────────────────
 inline QFont titleFont(int size = 28) {
     QFont f("Segoe UI", size);
     f.setWeight(QFont::Black);
@@ -136,7 +133,6 @@ inline QFont iconFont(int size = 14) {
     return QFont("Segoe MDL2 Assets", size);
 }
 
-// ─── Global stylesheet ──────────────────────────────────────────
 inline QString globalStyleSheet() {
     const auto &t = activeTheme();
     return QString(R"(
@@ -178,7 +174,6 @@ inline QString globalStyleSheet() {
             t.textMuted.name(), t.card.name());
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────
 inline QString formatTime(qint64 ms) {
     int totalSec = static_cast<int>(ms / 1000);
     int min = totalSec / 60;

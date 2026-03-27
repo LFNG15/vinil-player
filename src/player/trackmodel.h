@@ -6,6 +6,7 @@
 #include <QList>
 #include <QUrl>
 #include <QDateTime>
+#include <QColor>
 #include "theme.h"
 
 struct Track {
@@ -56,8 +57,16 @@ public:
     Track *findTrack(int id);
     QList<Folder> folders() const;
     QList<Track> tracksInFolder(const QString &folderName) const;
+    QList<Track> standaloneTracks() const;
     QList<Track> likedTracks() const;
     QList<Track> recentTracks(int count = 8) const;
+
+    // Playlist CRUD
+    int  createPlaylist(const QString &name, const QColor &c1, const QColor &c2);
+    void renamePlaylist(int id, const QString &newName);
+    void updatePlaylistCover(int id, const QColor &c1, const QColor &c2);
+    void deletePlaylist(int id);
+    void moveTrackToPlaylist(int trackId, int playlistId, const QString &playlistName);
 
     int nextIndex(int currentIndex, bool shuffle) const;
     int prevIndex(int currentIndex) const;

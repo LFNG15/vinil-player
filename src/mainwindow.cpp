@@ -177,7 +177,7 @@ void MainWindow::buildSidebar(QWidget *sidebar) {
 
     m_navHome    = makeNavBtn("Início",    "\uE10F");
     m_navAdd     = makeNavBtn("Adicionar", "\uE109");
-    m_navFolders = makeNavBtn("Pastas",    "\uE188");
+    m_navFolders = makeNavBtn("Playlists", "\uE188");
 
     connect(m_navHome, &QPushButton::clicked, [this]() { navigateTo("home"); });
     connect(m_navAdd, &QPushButton::clicked, [this]() { navigateTo("add"); });
@@ -190,7 +190,7 @@ void MainWindow::buildSidebar(QWidget *sidebar) {
     layout->addWidget(navWidget);
 
     // Sidebar folders
-    auto *foldersHeader = new QLabel("  SUAS PASTAS");
+    auto *foldersHeader = new QLabel("  SUAS PLAYLISTS");
     foldersHeader->setFont(Theme::bodyFont(10));
     foldersHeader->setStyleSheet(QString("color: %1; background: transparent; font-weight: bold; letter-spacing: 1px; padding: 16px 20px 4px;")
         .arg(Theme::textMuted().name()));
@@ -254,7 +254,7 @@ void MainWindow::refreshSidebarFolders() {
 
     auto folders = m_model->folders();
     if (folders.isEmpty()) {
-        auto *emptyLabel = new QLabel("Nenhuma pasta");
+        auto *emptyLabel = new QLabel("Nenhuma playlist");
         emptyLabel->setFont(Theme::bodyFont(11));
         emptyLabel->setStyleSheet(QString("color: %1; background: transparent; padding: 4px 14px;").arg(Theme::textMuted().name()));
         m_sidebarFoldersLayout->addWidget(emptyLabel);

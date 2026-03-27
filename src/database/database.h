@@ -11,19 +11,21 @@ public:
     bool open();
     QString lastError() const { return m_lastError; }
 
-    // Folders
     int  findOrCreateFolder(const QString &name, const QColor &c1, const QColor &c2);
+    int  createFolder(const QString &name, const QColor &c1, const QColor &c2);
     QList<Folder> allFolders();
+    void renameFolder(int id, const QString &newName);
+    void updateFolderCover(int id, const QColor &c1, const QColor &c2);
+    void deleteFolder(int id);
 
-    // Tracks
     int  insertTrack(const Track &t, int folderId);
     void deleteTrack(int id);
     void setLiked(int id, bool liked);
     void setDuration(int id, qint64 ms);
     void incrementPlayCount(int id);
+    void moveTrackToFolder(int trackId, int folderId);
     QList<Track> allTracks();
 
-    // Playback state (singleton row id=1)
     struct PlaybackState {
         int    trackId  = 0;
         qint64 posMs    = 0;

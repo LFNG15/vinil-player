@@ -12,8 +12,11 @@ QList<Track> &TrackModel::tracks() { return m_tracks; }
 const QList<Track> &TrackModel::tracks() const { return m_tracks; }
 
 void TrackModel::addTrack(const Track &track) {
-    int folderId = Database::instance().findOrCreateFolder(
-        track.folder, track.cover.c1, track.cover.c2);
+    int folderId = 0;
+    if (!track.folder.isEmpty()) {
+        folderId = Database::instance().findOrCreateFolder(
+            track.folder, track.cover.c1, track.cover.c2);
+    }
 
     int newId = Database::instance().insertTrack(track, folderId);
 
@@ -60,25 +63,21 @@ Track *TrackModel::findTrack(int id) {
 }
 
 QList<Folder> TrackModel::folders() const {
-    QStringList seen;
-    QList<Folder> result;
-    for (auto &t : m_tracks) {
-        if (!t.folder.isEmpty() && !seen.contains(t.folder)) {
-            seen.append(t.folder);
-            Folder f;
-            f.id   = t.folderId;
-            f.name = t.folder;
-            f.cover = t.cover;
-            result.append(f);
-        }
-    }
-    return result;
+    return Database::instance().allFolders();
 }
 
 QList<Track> TrackModel::tracksInFolder(const QString &folderName) const {
     QList<Track> result;
     for (auto &t : m_tracks) {
         if (t.folder == folderName) result.append(t);
+    }
+    return result;
+}
+
+QList<Track> TrackModel::standaloneTracks() const {
+    QList<Track> result;
+    for (auto &t : m_tracks) {
+        if (t.folderId == 0 && t.folder.isEmpty()) result.append(t);
     }
     return result;
 }
@@ -96,6 +95,47 @@ QList<Track> TrackModel::recentTracks(int count) const {
     std::sort(sorted.begin(), sorted.end(),
         [](const Track &a, const Track &b) { return a.addedAt > b.addedAt; });
     return sorted.mid(0, count);
+}
+
+int TrackModel::createPlaylist(const QString &name, const QColor &c1, const QColor &c2) {
+    int id = Database::instance().createFolder(name, c1, c2);
+    emit tracksChanged();
+    return id;
+}
+
+void TrackModel::renamePlaylist(int id, const QString &newName) {
+    Database::instance().renameFolder(id, newName);
+    for (auto &t : m_tracks) {
+        if (t.folderId == id) t.folder = newName;
+    }
+    emit tracksChanged();
+}
+
+void TrackModel::updatePlaylistCover(int id, const QColor &c1, const QColor &c2) {
+    Database::instance().updateFolderCover(id, c1, c2);
+    emit tracksChanged();
+}
+
+void TrackModel::deletePlaylist(int id) {
+    Database::instance().deleteFolder(id);
+    for (auto &t : m_tracks) {
+        if (t.folderId == id) {
+            t.folderId = 0;
+            t.folder   = "";
+        }
+    }
+    emit tracksChanged();
+}
+
+void TrackModel::moveTrackToPlaylist(int trackId, int playlistId, const QString &playlistName) {
+    Database::instance().moveTrackToFolder(trackId, playlistId);
+    for (auto &t : m_tracks) {
+        if (t.id == trackId) {
+            t.folderId = playlistId;
+            t.folder   = playlistName;
+        }
+    }
+    emit tracksChanged();
 }
 
 int TrackModel::nextIndex(int currentIndex, bool shuffle) const {

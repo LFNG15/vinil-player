@@ -2,7 +2,7 @@
 
 # 🔶 Lumen Player
 
-**Um player de música de desktop, leve e elegante — feito em C++ com Qt.**
+**Um player de música de desktop, leve e elegante feito em C++ com Qt.**
 
 Biblioteca local, playlists com capa, fila de reprodução, histórico de reprodução e temas personalizáveis.
 
@@ -89,31 +89,10 @@ Compress-Archive -Path "$dist\*" -DestinationPath "dist\LumenPlayer-win64.zip" -
 Teste rodando `dist\LumenPlayer.exe` e reproduzindo uma música (valida os plugins de
 multimídia e o driver SQLite).
 
-## Estrutura do projeto
-
-```
-src/
-├── main.cpp              # Ponto de entrada, tema e ícone do app
-├── mainwindow.*          # Janela principal, navegação e barra lateral
-├── database/             # Camada de persistência (SQLite)
-├── player/
-│   ├── playerbar.*       # Controles de reprodução e fila
-│   └── trackmodel.*      # Modelo de faixas/playlists
-├── pages/                # Telas: início, playlists, detalhe, curtidas, fila, adicionar
-└── widgets/              # Tema, logo, lista reordenável, slider e utilitários
-```
-
-## Roadmap
-
-- [ ] Equalizador gráfico
-- [ ] Escolher uma pasta e ler as músicas automaticamente
-- [ ] Card "tocando agora" em destaque durante a reprodução
-- [ ] Aviso ao adicionar uma música duplicada
-
 ## Licença
 
-Projeto feito por Lumen Connection(Conheça mais em lumenconnection.com.br), distribuído sob a licença
-[MIT](LICENSE) — Use, modifique e distribua à vontade.
+Projeto feito pela [Lumen Connection](https://lumenconnection.com.br), distribuído sob a licença
+[AGPL-3.0](LICENSE)
 
 ---
 

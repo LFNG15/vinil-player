@@ -14,6 +14,20 @@ win32 {
     QMAKE_TARGET_PRODUCT = Lumen Player
     QMAKE_TARGET_DESCRIPTION = Lumen Player
     QMAKE_TARGET_COMPANY = Lumen Connection
+
+    HELPER_SRC = $$PWD/thirdparty/yt-dlp.exe
+    HELPER_DST = $$OUT_PWD/yt-dlp.exe
+
+    copyhelper.input = HELPER_SRC
+    copyhelper.output = HELPER_DST
+    copyhelper.commands = $$QMAKE_COPY $$shell_path($$HELPER_SRC) $$shell_path($$HELPER_DST)
+    copyhelper.CONFIG += target_predeps no_link
+    copyhelper.name = YT-DLP
+    QMAKE_EXTRA_COMPILERS += copyhelper
+
+    helper.files = $$PWD/thirdparty/yt-dlp.exe
+    helper.path = $$INSTALL_PREFIX
+    INSTALLS += helper
 }
 
 INCLUDEPATH += \

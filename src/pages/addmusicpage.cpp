@@ -9,6 +9,7 @@
 #include <QFrame>
 #include <QUuid>
 #include <QRegularExpression>
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -495,42 +496,6 @@ static QString findFfmpeg() {
     return {};
 }
 
-static QString findYtDlp() {
-    // 1. Check PATH via Qt
-    QString found = QStandardPaths::findExecutable("yt-dlp");
-    if (!found.isEmpty()) return found;
-
-    // 2. Search common Windows Python install locations
-    QString localAppData = qgetenv("LOCALAPPDATA");
-    QString appData      = qgetenv("APPDATA");
-
-    QStringList scriptsDirs;
-
-    // Python from Microsoft Store (Packages)
-    QDir packagesDir(localAppData + "/Packages");
-    for (const auto &entry : packagesDir.entryList({"PythonSoftwareFoundation.Python*"}, QDir::Dirs)) {
-        QString base = localAppData + "/Packages/" + entry + "/LocalCache/local-packages";
-        for (const auto &ver : QDir(base).entryList({"Python3*"}, QDir::Dirs))
-            scriptsDirs << base + "/" + ver + "/Scripts";
-    }
-
-    // Regular Python install
-    QDir programsDir(localAppData + "/Programs/Python");
-    for (const auto &ver : programsDir.entryList({"Python3*"}, QDir::Dirs))
-        scriptsDirs << localAppData + "/Programs/Python/" + ver + "/Scripts";
-
-    // User site-packages (pip install --user)
-    QDir appDataPy(appData + "/Python");
-    for (const auto &ver : appDataPy.entryList({"Python3*"}, QDir::Dirs))
-        scriptsDirs << appData + "/Python/" + ver + "/Scripts";
-
-    for (const auto &dir : scriptsDirs) {
-        QString candidate = dir + "/yt-dlp.exe";
-        if (QFile::exists(candidate)) return candidate;
-    }
-    return {};
-}
-
 void AddMusicPage::startDownload() {
     if (m_downloadProcess) return;
 
@@ -622,35 +587,24 @@ void AddMusicPage::startDownload() {
         processFiles(added);
     });
 
-    QString ytDlp = findYtDlp();
-    if (ytDlp.isEmpty()) {
+    QString ytDlp = QDir(QCoreApplication::applicationDirPath()).filePath("yt-dlp.exe");
+
+    if (!QFileInfo::exists(ytDlp)) {
         m_downloadProcess = nullptr;
         m_downloadBtn->setEnabled(true);
         m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::danger().name()));
-        m_downloadStatus->setText("yt-dlp não encontrado. Instale com: pip install yt-dlp");
+
+        m_downloadStatus->setText("yt-dlp não encontrado. Verifique sua pasta de instalação.");
         m_downloadStatus->show();
         return;
     }
 
-    // Add yt-dlp's directory to PATH
-    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    env.insert("PATH", QFileInfo(ytDlp).absolutePath() + ";" + env.value("PATH"));
-    m_downloadProcess->setProcessEnvironment(env);
-
     QStringList args = {
-        "-x",
-        "--audio-format", "opus",
-        "--audio-quality", "0",
-        "-o", outDir + "/" + m_downloadPrefix + "_%(title)s.%(ext)s"
-    };
-
-    // Pass ffmpeg location explicitly if found
-    QString ffmpeg = findFfmpeg();
-    if (!ffmpeg.isEmpty())
-        args << "--ffmpeg-location" << QFileInfo(ffmpeg).absolutePath();
-
-    args << url;
-    m_downloadProcess->start(ytDlp, args);
+            "-x",
+            "--audio-format", "opus",
+            "--audio-quality", "0",
+            "-o", outDir + "/" + m_downloadPrefix + "_%(title)s.%(ext)s"
+        };
 }
 
 void AddMusicPage::addAllToLibrary() {

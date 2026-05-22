@@ -587,24 +587,34 @@ void AddMusicPage::startDownload() {
         processFiles(added);
     });
 
-    QString ytDlp = QDir(QCoreApplication::applicationDirPath()).filePath("yt-dlp.exe");
 
-    if (!QFileInfo::exists(ytDlp)) {
+    const QString appDir = QCoreApplication::applicationDirPath();
+    QString ytDlp;
+    for (const QString &candidate : {
+             QDir(appDir).filePath("yt-dlp.exe"),
+             QDir(appDir).filePath("../yt-dlp.exe") }) {
+        if (QFileInfo::exists(candidate)) { ytDlp = QDir::cleanPath(candidate); break; }
+    }
+
+    if (ytDlp.isEmpty()) {
+        m_downloadProcess->deleteLater();
         m_downloadProcess = nullptr;
         m_downloadBtn->setEnabled(true);
         m_downloadStatus->setStyleSheet(QString("color: %1; background: transparent;").arg(Theme::danger().name()));
-
         m_downloadStatus->setText("yt-dlp não encontrado. Verifique sua pasta de instalação.");
         m_downloadStatus->show();
         return;
     }
 
-    QStringList args = {
-            "-x",
-            "--audio-format", "opus",
-            "--audio-quality", "0",
-            "-o", outDir + "/" + m_downloadPrefix + "_%(title)s.%(ext)s"
-        };
+    const QStringList args = {
+        "-x",
+        "--audio-format", "opus",
+        "--audio-quality", "0",
+        "--no-playlist",
+        "-o", outDir + "/" + m_downloadPrefix + "_%(title)s.%(ext)s",
+        url
+    };
+    m_downloadProcess->start(ytDlp, args);
 }
 
 void AddMusicPage::addAllToLibrary() {

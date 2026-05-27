@@ -97,5 +97,5 @@ Projeto feito pela [Lumen Connection](https://lumenconnection.com.br), distribu�
 ---
 
 <div align="center">
-Feito com C++ e Qt • <strong>Lumen Connection</strong>
+Feito com C++ e Qt • <strong>🄯 Lumen Connection</strong>
 </div>
